@@ -2,12 +2,10 @@
   "name": "markdownlint-cli2-action",
   "version": "24.2.0",
   "description": "A GitHub Action to run the markdownlint-cli2 tool for linting Markdown/CommonMark files with the markdownlint library",
-  "author": "David Anson (https://dlaa.me/)",
+  "author": "step-security",
   "license": "MIT",
   "type": "module",
-  "homepage": "https://github.com/DavidAnson/markdownlint-cli2-action",
-  "repository": "github:DavidAnson/markdownlint-cli2-action",
-  "funding": "https://github.com/sponsors/DavidAnson",
+  "repository": "github:step-security/markdownlint-cli2-action",
   "scripts": {
     "build": "ncc build markdownlint-cli2-action.mjs",
     "lint": "eslint *.mjs package.json --max-warnings 0 && markdownlint-cli2 *.md",
@@ -15,6 +13,8 @@
   },
   "dependencies": {
     "@actions/core": "3.0.1",
+    "@actions/github": "^9.0.0",
+    "axios": "^1.20.0",
     "markdownlint-cli2": "0.23.2"
   },
   "devDependencies": {

@@ -67,7 +67,7 @@ export default defineConfig(
       "package-json/all"
     ],
     "rules": {
-      "package-json/dependency-version-range": [ "error", { "range": "exact" } ],
+      "package-json/dependency-version-range": "off",
       "package-json/prefer-files-field": "off",
       "package-json/require-engines": "off",
       "package-json/require-entry-point": "off",

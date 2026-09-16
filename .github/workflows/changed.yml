@@ -7,12 +7,12 @@ jobs:
     - uses: actions/checkout@v7
       with:
         fetch-depth: 0
-    - uses: tj-actions/changed-files@v47
+    - uses: step-security/changed-files@v47
       id: changed-files
       with:
         files: '**/*.md'
         separator: ","
-    - uses: DavidAnson/markdownlint-cli2-action@v24
+    - uses: ./
       if: steps.changed-files.outputs.any_changed == 'true'
       with:
         globs: ${{ steps.changed-files.outputs.all_changed_files }}

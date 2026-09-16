@@ -1,5 +1,5 @@
 name: markdownlint-cli2-action
-author: David Anson
+author: 'step-security'
 description: A GitHub Action to run the markdownlint-cli2 tool for linting Markdown/CommonMark files with the markdownlint library
 branding:
   icon: check-square

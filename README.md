@@ -1,6 +1,6 @@
-[![StepSecurity Maintained Action](https://raw.githubusercontent.com/step-security/maintained-actions-assets/main/assets/maintained-action-banner.png)](https://docs.stepsecurity.io/actions/stepsecurity-maintained-actions)
-
 # markdownlint-cli2-action
+
+[![StepSecurity Maintained Action][banner]][docs]
 
 > A GitHub Action to run the [`markdownlint-cli2`][markdownlint-cli2] tool for
 linting [Markdown][markdown]/[CommonMark][commonmark] files with
@@ -62,13 +62,13 @@ expressions.
 To lint Markdown files in the base directory of a project:
 
 ```yaml
-- uses: DavidAnson/markdownlint-cli2-action@v24
+- uses: step-security/markdownlint-cli2-action@v24
 ```
 
 To lint all Markdown files in a project:
 
 ```yaml
-- uses: DavidAnson/markdownlint-cli2-action@v24
+- uses: step-security/markdownlint-cli2-action@v24
   with:
     globs: '**/*.md'
 ```
@@ -76,7 +76,7 @@ To lint all Markdown files in a project:
 To lint specific Markdown files in a project:
 
 ```yaml
-- uses: DavidAnson/markdownlint-cli2-action@v24
+- uses: step-security/markdownlint-cli2-action@v24
   with:
     globs: |
       README.md
@@ -87,7 +87,7 @@ To lint specific Markdown files in a project:
 To use a custom separator:
 
 ```yaml
-- uses: DavidAnson/markdownlint-cli2-action@v24
+- uses: step-security/markdownlint-cli2-action@v24
   with:
     globs: 'README.md,CHANGELOG.md,docs/*.md'
     separator: ','
@@ -96,7 +96,7 @@ To use a custom separator:
 To fix supported issues when linting:
 
 ```yaml
-- uses: DavidAnson/markdownlint-cli2-action@v24
+- uses: step-security/markdownlint-cli2-action@v24
   with:
     fix: true
     globs: '**/*.md'
@@ -105,7 +105,7 @@ To fix supported issues when linting:
 To specify a custom configuration file:
 
 ```yaml
-- uses: DavidAnson/markdownlint-cli2-action@v24
+- uses: step-security/markdownlint-cli2-action@v24
   with:
     config: 'config/custom.markdownlint.jsonc'
     globs: '**/*.md'
@@ -114,7 +114,7 @@ To specify a custom configuration file:
 To specify an embedded object in `package.json`:
 
 ```yaml
-- uses: DavidAnson/markdownlint-cli2-action@v24
+- uses: step-security/markdownlint-cli2-action@v24
   with:
     config: 'package.json'
     configPointer: '/markdownlint-cli2'
@@ -124,7 +124,7 @@ To specify an embedded object in `package.json`:
 To specify an embedded object in `pyproject.toml`:
 
 ```yaml
-- uses: DavidAnson/markdownlint-cli2-action@v24
+- uses: step-security/markdownlint-cli2-action@v24
   with:
     config: 'pyproject.toml'
     configPointer: '/tool/markdownlint-cli2'
@@ -134,21 +134,19 @@ To specify an embedded object in `pyproject.toml`:
 To prevent linting issues from failing the workflow run:
 
 ```yaml
-- uses: DavidAnson/markdownlint-cli2-action@v24
+- uses: step-security/markdownlint-cli2-action@v24
   continue-on-error: true
 ```
-
-See [`example.yml`][example-yml] for a simple GitHub workflow that uses
-`markdownlint-cli2-action`.
 
 See [`changed.yml`][changed-yml] for a GitHub workflow that lints only the
 Markdown files that changed in the most recent commit (useful for Pull Requests
 and/or gradually introducing linting rules to a new repository).
 
+[banner]: https://raw.githubusercontent.com/step-security/maintained-actions-assets/main/assets/maintained-action-banner.png
 [changed-yml]: .github/workflows/changed.yml
 [command-line]: https://github.com/DavidAnson/markdownlint-cli2#command-line
 [commonmark]: https://commonmark.org/
-[example-yml]: .github/workflows/example.yml
+[docs]: https://docs.stepsecurity.io/actions/stepsecurity-maintained-actions
 [glob-syntax]: https://github.com/DavidAnson/markdownlint-cli2#use
 [json-pointer]: https://datatracker.ietf.org/doc/html/rfc6901
 [markdown]: https://wikipedia.org/wiki/Markdown
