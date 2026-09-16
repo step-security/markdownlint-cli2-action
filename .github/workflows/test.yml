@@ -1,0 +1,174 @@
+name: Test markdownlint-cli2-action
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+  workflow_dispatch:
+
+jobs:
+  test-script:
+    name: Run test script
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-node@v7
+    - run: npm clean-install
+    - run: npm run test
+  no-globs:
+    name: No globs (README.md, 0 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./
+  one-glob-file:
+    name: One glob (test/errors.md, 3 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./
+      with:
+        globs: test/errors.md
+      continue-on-error: true
+      id: test
+    - run: exit 1
+      if: steps.test.outcome != 'failure'
+  one-glob-pattern:
+    name: One glob (README.md, 0 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./
+      with:
+        globs: '*.md'
+  two-globs:
+    name: Two globs (README.md and test/errors.md, 3 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./
+      with:
+        globs: |
+          *.md
+          test/*.md
+      continue-on-error: true
+      id: test
+    - run: exit 1
+      if: steps.test.outcome != 'failure'
+  separator:
+    name: Separator (README.md and test/errors.md, 3 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./
+      with:
+        globs: '*.md,test/*.md'
+        separator: ','
+      continue-on-error: true
+      id: test
+    - run: exit 1
+      if: steps.test.outcome != 'failure'
+  config:
+    name: config (test/errors.md, 2 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - run: rm .markdownlint.json
+    - uses: ./
+      with:
+        config: 'config/test.markdownlint.jsonc'
+        globs: 'test/*.md'
+      continue-on-error: true
+      id: test
+    - run: exit 1
+      if: steps.test.outcome != 'failure'
+  config-invalid:
+    name: config (invalid configuration file, fails)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./
+      with:
+        config: 'invalid.markdownlint.jsonc'
+        globs: 'test/*.md'
+      continue-on-error: true
+      id: test
+    - run: exit 1
+      if: steps.test.outcome != 'failure'
+  package-json:
+    name: package.json (test/errors.md, 2 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - run: rm .markdownlint.json
+    - uses: ./
+      with:
+        config: 'config/package.json'
+        configPointer: '/markdownlint-cli2'
+        globs: 'test/*.md'
+      continue-on-error: true
+      id: test
+    - run: exit 1
+      if: steps.test.outcome != 'failure'
+  pyproject-toml:
+    name: pyproject.toml (test/errors.md, 2 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - run: rm .markdownlint.json
+    - uses: ./
+      with:
+        config: 'config/pyproject.toml'
+        configPointer: '/tool/markdownlint-cli2'
+        globs: 'test/*.md'
+      continue-on-error: true
+      id: test
+    - run: exit 1
+      if: steps.test.outcome != 'failure'
+  fix-true:
+    name: fix-true (test/errors.md, 0 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./
+      with:
+        fix: true
+        globs: 'test/*.md'
+  fix-false:
+    name: fix-false (test/errors.md, 3 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: ./
+      with:
+        fix: false
+        globs: 'test/*.md'
+      continue-on-error: true
+      id: test
+    - run: exit 1
+      if: steps.test.outcome != 'failure'
+  rules-pass:
+    name: custom rules (README.md, 0 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - run: rm .markdownlint.json
+    - uses: ./
+      with:
+        config: 'config/custom-rules-pass.markdownlint-cli2.jsonc'
+        globs: 'README.md'
+  rules-fail:
+    name: custom rules (README.md, 2 errors)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - run: rm .markdownlint.json
+    - uses: ./
+      with:
+        config: 'config/custom-rules-fail.markdownlint-cli2.jsonc'
+        globs: 'README.md'
+      continue-on-error: true
+      id: test
+    - run: exit 1
+      if: steps.test.outcome != 'failure'

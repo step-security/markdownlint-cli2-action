@@ -1,0 +1,30 @@
+name: markdownlint-cli2-action
+author: 'step-security'
+description: A GitHub Action to run the markdownlint-cli2 tool for linting Markdown/CommonMark files with the markdownlint library
+branding:
+  icon: check-square
+  color: orange
+inputs:
+  config:
+    description: Path of a file to use for the base configuration object (defaults to none)
+    default: ''
+    required: false
+  configPointer:
+    description: JSON Pointer to a configuration object within the --config file (defaults to none)
+    default: ''
+    required: false
+  fix:
+    description: Whether to fix supported issues automatically ("true"/"false", defaults to "false")
+    default: 'false'
+    required: false
+  globs:
+    description: Glob expression(s) of files to lint (newline-delimited, defaults to "*.{md,markdown}")
+    default: '*.{md,markdown}'
+    required: false
+  separator:
+    description: String to use as a separator for the "globs" input (defaults to newline)
+    default: "\n"
+    required: false
+runs:
+  using: node24
+  main: dist/index.mjs
