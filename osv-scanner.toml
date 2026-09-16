@@ -1,0 +1,3 @@
+[[IgnoredVulns]]
+id = "GHSA-7w5x-hrqm-74c2"
+reason = "smol-toml parse() is only invoked when the 'config' input explicitly points to a .toml file. Auto-discovery in markdownlint-cli2 does not include .toml files (.markdownlint-cli2.jsonc/.yaml/.cjs/.mjs only), so default usage of this action never reaches the vulnerable code path. Upstream fix not yet available: markdownlint-cli2@0.23.2 (latest) still pins smol-toml@1.7.0 and no patched release exists. To be revisited once markdownlint-cli2 releases with smol-toml>=1.7.1."
