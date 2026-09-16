@@ -1,0 +1,27 @@
+name: Checkers
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+  schedule:
+  - cron: '30 12 * * *'
+  workflow_dispatch:
+
+jobs:
+
+  linkcheck:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - run: 'npx linkinator "*.md" --directory-listing --skip "^https://wikipedia.org/"'
+
+  spellcheck:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: tbroadley/spellchecker-cli-action@v1
+      with:
+        dictionaries: '.github/dictionary.txt'
+        files: '*.md'
