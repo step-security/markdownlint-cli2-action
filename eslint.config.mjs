@@ -1,7 +1,5 @@
 // @ts-check
 
-/* eslint-disable n/no-unpublished-import */
-
 import { defineConfig } from "eslint/config";
 import js from "@eslint/js";
 import eslintPackageJson from "eslint-package-json";
@@ -69,7 +67,10 @@ export default defineConfig(
     ],
     "rules": {
       "package-json/dependency-version-range": "off",
+      "package-json/no-package-manager-engines": "off",
+      "package-json/no-redundant-repository-fields": "off",
       "package-json/prefer-files-field": "off",
+      "package-json/prefer-shorthand": "off",
       "package-json/require-engines": "off",
       "package-json/require-entry-point": "off",
       "package-json/require-private": "off",

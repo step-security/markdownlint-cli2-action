@@ -8,14 +8,14 @@ import { main as markdownlintCli2 } from "markdownlint-cli2";
 // eslint-disable-next-line max-lines-per-function
 const validateSubscription = async () => {
   // eslint-disable-next-line unicorn/no-null
-  let repoPrivate = null;
+  let repositoryPrivate = null;
   // eslint-disable-next-line n/no-process-env
   const eventPath = process.env.GITHUB_EVENT_PATH;
   // eslint-disable-next-line n/no-sync
   if (eventPath && fs.existsSync(eventPath)) {
     // eslint-disable-next-line n/no-sync
     const payload = JSON.parse(fs.readFileSync(eventPath, "utf8"));
-    repoPrivate = payload?.repository?.private;
+    repositoryPrivate = payload?.repository?.private;
   }
 
   const upstream = "davidanson/markdownlint-cli2-action";
@@ -25,12 +25,12 @@ const validateSubscription = async () => {
   core.info("");
   core.info("\u{1B}[1;36mStepSecurity Maintained Action\u{1B}[0m");
   core.info(`Secure drop-in replacement for ${upstream}`);
-  if (repoPrivate === false) {
+  if (repositoryPrivate === false) {
     core.info("\u{1B}[32m\u{2713} Free for public repositories\u{1B}[0m");
   }
   core.info(`\u{1B}[36mLearn more:\u{1B}[0m ${documentationUrl}`);
   core.info("");
-  if (repoPrivate === false) {
+  if (repositoryPrivate === false) {
     return;
   }
   // eslint-disable-next-line n/no-process-env

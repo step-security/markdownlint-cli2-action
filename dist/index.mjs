@@ -46104,14 +46104,14 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 // eslint-disable-next-line max-lines-per-function
 const validateSubscription = async () => {
   // eslint-disable-next-line unicorn/no-null
-  let repoPrivate = null;
+  let repositoryPrivate = null;
   // eslint-disable-next-line n/no-process-env
   const eventPath = process.env.GITHUB_EVENT_PATH;
   // eslint-disable-next-line n/no-sync
   if (eventPath && node_fs__WEBPACK_IMPORTED_MODULE_0__.existsSync(eventPath)) {
     // eslint-disable-next-line n/no-sync
     const payload = JSON.parse(node_fs__WEBPACK_IMPORTED_MODULE_0__.readFileSync(eventPath, "utf8"));
-    repoPrivate = payload?.repository?.private;
+    repositoryPrivate = payload?.repository?.private;
   }
 
   const upstream = "davidanson/markdownlint-cli2-action";
@@ -46121,12 +46121,12 @@ const validateSubscription = async () => {
   _actions_core__WEBPACK_IMPORTED_MODULE_1__/* .info */ .pq("");
   _actions_core__WEBPACK_IMPORTED_MODULE_1__/* .info */ .pq("\u{1B}[1;36mStepSecurity Maintained Action\u{1B}[0m");
   _actions_core__WEBPACK_IMPORTED_MODULE_1__/* .info */ .pq(`Secure drop-in replacement for ${upstream}`);
-  if (repoPrivate === false) {
+  if (repositoryPrivate === false) {
     _actions_core__WEBPACK_IMPORTED_MODULE_1__/* .info */ .pq("\u{1B}[32m\u{2713} Free for public repositories\u{1B}[0m");
   }
   _actions_core__WEBPACK_IMPORTED_MODULE_1__/* .info */ .pq(`\u{1B}[36mLearn more:\u{1B}[0m ${documentationUrl}`);
   _actions_core__WEBPACK_IMPORTED_MODULE_1__/* .info */ .pq("");
-  if (repoPrivate === false) {
+  if (repositoryPrivate === false) {
     return;
   }
   // eslint-disable-next-line n/no-process-env
