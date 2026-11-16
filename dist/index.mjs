@@ -45495,12 +45495,25 @@ module.exports.Fl =
       (frontMatterTitlePattern !== undefined) && !frontMatterTitlePattern;
     const frontMatterTitleRe =
       new RegExp(
+        // eslint-disable-next-line unicorn/no-useless-coercion
         String(frontMatterTitlePattern || "^\\s*\"?title\"?\\s*[:=]"),
         "i"
       );
     return !ignoreFrontMatter &&
       frontMatterLines.some((line) => frontMatterTitleRe.test(line));
   };
+
+/**
+ * Normalizes link label text.
+ *
+ * @param {string} text Link label text.
+ * @returns {string} Normalized link label text.
+ */
+function normalizeLinkLabelText(text) {
+  // Note that toLowerCase() should ideally perform a Unicode case fold instead
+  return text.toLowerCase().trim().replace(/\s+/g, " ");
+}
+module.exports.f9 = normalizeLinkLabelText;
 
 /**
  * Result object for getReferenceLinkImageData.
@@ -45520,7 +45533,6 @@ module.exports.Fl =
  * @returns {GetReferenceLinkImageDataResult} Reference link/image data.
  */
 function getReferenceLinkImageData(tokens) {
-  const normalizeReference = (/** @type {string} */ s) => s.toLowerCase().trim().replace(/\s+/g, " ");
   const getText = (/** @type {MicromarkToken} */ t) => t?.children.filter((c) => c.type !== "blockQuotePrefix").map((c) => c.text).join("");
   /** @type {Map<string, number[][]>} */
   const references = new Map();
@@ -45532,7 +45544,7 @@ function getReferenceLinkImageData(tokens) {
       token.startColumn - 1,
       token.text.length
     ];
-    const reference = normalizeReference(label);
+    const reference = normalizeLinkLabelText(label);
     const dictionary = isShortcut ? shortcuts : references;
     const referenceData = dictionary.get(reference) || [];
     referenceData.push(referenceDatum);
@@ -45574,7 +45586,7 @@ function getReferenceLinkImageData(tokens) {
       case "definitionLabelString": // eslint-disable-line no-fallthrough
       {
         // definitions and definitionLineIndices
-        const reference = normalizeReference(`${labelPrefix}${token.text}`);
+        const reference = normalizeLinkLabelText(`${labelPrefix}${token.text}`);
         if (definitions.has(reference)) {
           duplicateDefinitions.push([ reference, token.startLine - 1 ]);
         } else {
@@ -45846,6 +45858,7 @@ const { flatTokensSymbol, htmlFlowSymbol, newlineRe } = __nccwpck_require__(3408
 /** @typedef {import("../lib/exports.mjs").MicromarkToken} Token */
 // eslint-disable-next-line jsdoc/valid-types
 /** @typedef {typeof import("../lib/micromark-types.d.mts", { with: { "resolution-mode": "import" } })} _ambient_ */
+/** @type {import("micromark-extension-gfm-footnote")} */
 
 /**
  * Determines if a Micromark token is within an htmlFlow type.
@@ -46015,11 +46028,10 @@ function getDescendantsByType(parent, typePath) {
  */
 function getHeadingLevel(heading) {
   let level = 1;
-  const headingSequence = heading.children.find(
+  // @ts-ignore
+  const { text } = heading.children.find(
     (child) => [ "atxHeadingSequence", "setextHeadingLine" ].includes(child.type)
   );
-  // @ts-ignore
-  const { text } = headingSequence;
   if (text[0] === "#") {
     level = Math.min(text.length, 6);
   } else if (text[0] === "-") {
@@ -46468,7 +46480,7 @@ __nccwpck_require__.a(__webpack_module__, async (__webpack_handle_async_dependen
 /* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3024);
 /* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9047);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8179);
-/* harmony import */ var markdownlint_cli2__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5000);
+/* harmony import */ var markdownlint_cli2__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(9613);
 // @ts-check
 
 
@@ -64977,7 +64989,7 @@ var MarkdownItCallable = callable(MarkdownIt);
 
 /***/ }),
 
-/***/ 5000:
+/***/ 9613:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -74639,7 +74651,7 @@ const fixableRuleNames = (/* unused pure expression or super */ null && ([
   "MD054", "MD058", "MD060"
 ]));
 const homepage = "https://github.com/DavidAnson/markdownlint";
-const version = "0.42.0";
+const version = "0.42.1";
 
 // EXTERNAL MODULE: ./node_modules/markdownlint/lib/defer-require.cjs
 var defer_require = __nccwpck_require__(9489);
@@ -76842,7 +76854,7 @@ function getHtmlFlowTagName(token) {
   "function": function MD042(params, onError) {
     const { definitions } = getReferenceLinkImageData();
     const isReferenceDefinitionHash = (/** @type {MicromarkToken} */ token) => {
-      const definition = definitions.get(token.text.trim());
+      const definition = definitions.get((0,helpers_helpers/* normalizeLinkLabelText */.f9)(token.text));
       return Boolean(definition && (definition[1] === "#"));
     };
     const links = filterByTypesCached([ "link" ]);
@@ -93059,7 +93071,7 @@ const autolinkAble = (/** @type {string} */ destination) => {
           const isShortcut = (0,micromark_helpers.getDescendantsByType)(link, [ "reference" ]).length === 0;
           const referenceString = (0,micromark_helpers.getDescendantsByType)(link, [ "reference", "referenceString" ])[0]?.text;
           const isCollapsed = (referenceString === undefined);
-          const definition = definitions.get(referenceString || label);
+          const definition = definitions.get((0,helpers_helpers/* normalizeLinkLabelText */.f9)(referenceString || label));
           destination = (definition && definition[1]) || "";
           isError = Boolean(
             destination &&
@@ -93377,28 +93389,33 @@ function normalize(str) {
 });
 
 ;// CONCATENATED MODULE: ./node_modules/ansi-regex/index.js
+// Valid string terminator sequences are ESC\ and 0x9c; OSC also accepts BEL.
+const ST = String.raw`(?:\u001B\u005C|\u009C)`;
+
+// OSC sequences only: ESC ] ... BEL/ST (or the C1 introducer 0x9d ... BEL/ST).
+// Payloads stop at terminators, cancellations, and C1 controls. An unterminated string cannot swallow the next sequence or repeatedly scan its payload from later introducers. Terminals likewise abort a control string on an unexpected ESC.
+const stringControls = String.raw`\u0018\u001A\u001B\u0080-\u009F`;
+const osc = String.raw`(?:\u001B\]|\u009D)[^\u0007${stringControls}]*(?:\u0007|${ST})`;
+
+// DCS, SOS, PM, APC, and screen window titles have opaque payloads terminated by ST. Nested ESC payloads, such as tmux passthrough, require a parser.
+const controlString = String.raw`(?:\u001B[PX^_k]|[\u0090\u0098\u009E\u009F])[^${stringControls}]*${ST}`;
+
+// Linux console palette controls have fixed lengths and no string terminator; iTerm2 terminates its palette assignments. Consume an immediately adjacent OSC terminator, but match these controls before OSC so a later BEL cannot consume visible text.
+const linuxPalette = String.raw`\u001B\](?:P[\dA-Fa-f]{7}|R)(?:\u0007|${ST})?`;
+
+// CSI: ESC [ or C1 CSI, parameter bytes (0x30–0x3f), intermediate bytes (0x20–0x2f), then a final byte (0x40–0x7e).
+// `= < >` are final bytes in two-byte VT52 escapes (`ESC >`) but parameter bytes in a CSI (`ESC [ > 0 ; 276 ; 0 c`, the device attributes reply). Match CSI first to consume the whole sequence, where its introducer makes the two unambiguous.
+const csi = String.raw`(?:\u001B\[|\u009B)[\u0030-\u003F]*[\u0020-\u002F]*[\u0040-\u007E]`;
+
+// Related escapes: ESC, intermediate bytes (0x20–0x2f), then a final byte (0x30–0x7e), or a supported two-byte escape.
+// The two-byte final class stays narrow so that ESC followed by an arbitrary character is not read as a sequence. CSI parameters belong only to the CSI form, preventing partial matches and avoiding a second scan with nested repetition.
+// Escapes whose final byte is a digit include `ESC 7` and `ESC 8` (save and restore cursor), `ESC ( 0` (line drawing character set), and `ESC # 8` (screen alignment).
+// A digit is never a CSI final byte. These escapes end immediately at their final byte, so `ESC 7 l` is read as the escape followed by text rather than a sequence with parameter 7 and final byte `l`.
+const ansi_regex_escape = String.raw`\u001B(?:[\u0020-\u002F]+[\u0030-\u007E]|[\dA-PR-TZcf-oq-uy=><~|}])`;
+
+const pattern = `${linuxPalette}|${osc}|${controlString}|${csi}|${ansi_regex_escape}`;
+
 function ansiRegex({onlyFirst = false} = {}) {
-	// Valid string terminator sequences are BEL, ESC\, and 0x9c
-	const ST = String.raw`(?:\u0007|\u001B\u005C|\u009C)`;
-
-	// OSC sequences only: ESC ] ... ST (or the C1 introducer 0x9d ... ST)
-	// The payload stops at the first terminator character rather than scanning ahead for one, so an unterminated `ESC ]` cannot rescan the rest of the input. Terminals likewise abort a control string on an unexpected ESC. The payload also stops at 0x9d so an unterminated C1 OSC cannot swallow the next one.
-	const osc = String.raw`(?:(?:\u001B\]|\u009D)[^\u0007\u001B\u009C\u009D]*${ST})`;
-
-	// CSI and related: ESC/C1, optional intermediates, optional params (supports ; and :) then final byte
-	// The final byte class is deliberately narrow, so that ESC followed by an arbitrary character is not read as a sequence. It must
-	// not include the parameter digits though: when the real final byte is outside the class the engine backtracks and takes the last
-	// parameter digit as the final byte instead, leaving the real one behind as visible text. `ESC [ 5 d` stripped to a bare `d`.
-	const csi = String.raw`[\u001B\u009B][[\]()#;?]*(?:\d{1,4}(?:[;:]\d{0,4})*)?[A-PR-TZcf-nq-uy=><~]`;
-
-	// `= < >` are final bytes in the two byte VT52 escapes (`ESC >`) but parameter bytes in a CSI
-	// (`ESC [ > 0 ; 276 ; 0 c`, the device attributes reply). Matching them as a final byte always
-	// wins and leaves the rest of the reply behind as visible text, so the private parameter form is
-	// matched first, where the `[` makes the two unambiguous.
-	const csiPrivate = String.raw`(?:\u001B\[|\u009B)[<=>][0-9;:]*[A-PR-TZcf-nq-uy~]`;
-
-	const pattern = `${osc}|${csiPrivate}|${csi}`;
-
 	return new RegExp(pattern, onlyFirst ? undefined : 'g');
 }
 
@@ -95586,7 +95603,7 @@ function getVersion() {
  * markdown-it base token.
  *
  * @typedef {Object} MarkdownItBaseToken
- * @property {string[][] | null} attrs HTML attributes.
+ * @property {[string, string | number][] | null} attrs HTML attributes.
  * @property {boolean} block Block-level token.
  * @property {MarkdownItBaseToken[] | null} children Child nodes.
  * @property {string} content Tag contents.
@@ -95595,7 +95612,7 @@ function getVersion() {
  * @property {number} level Nesting level.
  * @property {number[] | null} map Beginning/ending line numbers.
  * @property {string} markup Markup text.
- * @property {Object} meta Arbitrary data.
+ * @property {Record<string, unknown> | null} meta Arbitrary data.
  * @property {number} nesting Level change.
  * @property {string} tag HTML tag name.
  * @property {string} type Token type.
@@ -95677,21 +95694,26 @@ function getVersion() {
  */
 
 /**
- * Method used by the markdown-it parser to parse input.
+ * Function used by the markdown-it parser to parse input.
  *
  * @callback MarkdownItParse
  * @param {string} src Source string.
- * @param {Object} env Environment sandbox.
+ * @param {Record<string | symbol, unknown>} env Environment sandbox.
  * @returns {MarkdownItBaseToken[]} Tokens.
  */
 
-/** @typedef {import("markdown-it").MarkdownIt} MarkdownIt */
+/**
+ * Type of the markdown-it parser.
+ *
+ * @typedef {Object} MarkdownIt
+ * @property {MarkdownItParse} parse Markdown parse function.
+ */
 
 /**
  * Gets an instance of the markdown-it parser. Any plugins should already have been loaded.
  *
  * @callback MarkdownItFactory
- * @returns {MarkdownIt|Promise<MarkdownIt>} Instance of the markdown-it parser.
+ * @returns {MarkdownIt | Promise<MarkdownIt>} Instance of the markdown-it parser.
  */
 
 /**
@@ -95893,7 +95915,7 @@ const appendToArray = (destination, source) => {
 // @ts-check
 
 const packageName = "markdownlint-cli2";
-const packageVersion = "0.24.0";
+const packageVersion = "0.24.1";
 
 const libraryName = "markdownlint";
 
@@ -97336,8 +97358,8 @@ const tomlParse = (text) => parse_parse(text);
 
 /* harmony default export */ const toml_parse = (tomlParse);
 
-;// CONCATENATED MODULE: ./node_modules/markdownlint-cli2/node_modules/js-yaml/dist/js-yaml.mjs
-/*! js-yaml 5.4.3 https://github.com/nodeca/js-yaml @license MIT */
+;// CONCATENATED MODULE: ./node_modules/js-yaml/dist/js-yaml.mjs
+/*! js-yaml 5.5.0 https://github.com/nodeca/js-yaml @license MIT */
 //#region src/tag.ts
 /**
 * Returned by a scalar resolver when the source does not match its tag.
@@ -98163,10 +98185,8 @@ var Schema = class Schema {
 					if (tag.matchByTagPrefix) prefix.sequence.push(tag);
 					else exact.sequence[tag.tagName] = tag;
 					break;
-				case "mapping":
-					if (tag.matchByTagPrefix) prefix.mapping.push(tag);
-					else exact.mapping[tag.tagName] = tag;
-					break;
+				case "mapping": if (tag.matchByTagPrefix) prefix.mapping.push(tag);
+				else exact.mapping[tag.tagName] = tag;
 			}
 		}
 		const implicitScalarAnyFirstChar = implicitScalarTags.filter((tag) => tag.implicitFirstChars === null);
@@ -98754,16 +98774,17 @@ function getBlockValue(input, start, end, indent, chomping, folded) {
 		}
 		const content = line.slice(textIndent);
 		const first = content.charCodeAt(0);
-		if (folded) if (first === 32 || first === 9) {
-			atMoreIndented = true;
-			result += "\n".repeat(didReadContent ? 1 + emptyLines : emptyLines);
-		} else if (atMoreIndented) {
-			atMoreIndented = false;
-			result += "\n".repeat(emptyLines + 1);
-		} else if (emptyLines === 0) {
-			if (didReadContent) result += " ";
-		} else result += "\n".repeat(emptyLines);
-		else result += "\n".repeat(didReadContent ? 1 + emptyLines : emptyLines);
+		if (folded) {
+			if (first === 32 || first === 9) {
+				atMoreIndented = true;
+				result += "\n".repeat(didReadContent ? 1 + emptyLines : emptyLines);
+			} else if (atMoreIndented) {
+				atMoreIndented = false;
+				result += "\n".repeat(emptyLines + 1);
+			} else if (emptyLines === 0) {
+				if (didReadContent) result += " ";
+			} else result += "\n".repeat(emptyLines);
+		} else result += "\n".repeat(didReadContent ? 1 + emptyLines : emptyLines);
 		result += content;
 		didReadContent = true;
 		emptyLines = 0;
@@ -98797,24 +98818,69 @@ var DEFAULT_TAG_HANDLERS = Object.assign(Object.create(null), {
 	"!": "!",
 	"!!": "tag:yaml.org,2002:"
 });
-function tagPercentEncode(source) {
-	return encodeURI(source).replace(/!/g, "%21");
+var TAG_SUFFIX_CHARS = "-#;/?:@&=+$_.~*'()";
+var TAG_URI_CHARS = TAG_SUFFIX_CHARS + "!,[]";
+var HEX = "0123456789ABCDEF";
+function percentByte(byte) {
+	return "%" + HEX[byte >> 4] + HEX[byte & 15];
+}
+function tagPercentEncode(source, isSuffix) {
+	const allowed = isSuffix ? TAG_SUFFIX_CHARS : TAG_URI_CHARS;
+	let result = "";
+	for (let index = 0; index < source.length; index++) {
+		let ch = source.charCodeAt(index);
+		if (ch >= 48 && ch <= 57 || ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || allowed.includes(source[index])) {
+			result += source[index];
+			continue;
+		}
+		if (ch >= 55296 && ch <= 56319) ch = 65536 + ((ch & 1023) << 10) + (source.charCodeAt(++index) & 1023);
+		if (ch < 128) result += percentByte(ch);
+		else if (ch < 2048) result += percentByte(192 | ch >> 6) + percentByte(128 | ch & 63);
+		else if (ch < 65536) result += percentByte(224 | ch >> 12) + percentByte(128 | ch >> 6 & 63) + percentByte(128 | ch & 63);
+		else result += percentByte(240 | ch >> 18) + percentByte(128 | ch >> 12 & 63) + percentByte(128 | ch >> 6 & 63) + percentByte(128 | ch & 63);
+	}
+	return result;
+}
+function tagPercentDecode(source) {
+	let result = "";
+	let index = 0;
+	while (index < source.length) {
+		if (source.charCodeAt(index) !== 37) {
+			result += source[index++];
+			continue;
+		}
+		let ch = parseInt(source.slice(index + 1, index + 3), 16);
+		index += 3;
+		if (ch >= 192) {
+			let remaining = ch < 224 ? 1 : ch < 240 ? 2 : 3;
+			ch &= (1 << 6 - remaining) - 1;
+			while (remaining-- > 0) {
+				ch = ch << 6 | parseInt(source.slice(index + 1, index + 3), 16) & 63;
+				index += 3;
+			}
+		}
+		if (ch < 65536) result += String.fromCharCode(ch);
+		else {
+			ch -= 65536;
+			result += String.fromCharCode(55296 | ch >> 10, 56320 | ch & 1023);
+		}
+	}
+	return result;
 }
 function tagNameFull(rawTag, tagHandlers) {
-	if (rawTag.startsWith("!<") && rawTag.endsWith(">")) return decodeURIComponent(rawTag.slice(2, -1));
+	if (rawTag.startsWith("!<") && rawTag.endsWith(">")) return tagPercentDecode(rawTag.slice(2, -1));
 	const handleEnd = rawTag.indexOf("!", 1);
 	const handle = handleEnd === -1 ? "!" : rawTag.slice(0, handleEnd + 1);
-	const prefix = tagHandlers?.[handle] ?? DEFAULT_TAG_HANDLERS[handle] ?? handle;
-	return decodeURIComponent(prefix) + decodeURIComponent(rawTag.slice(handle.length));
+	return tagPercentDecode(tagHandlers?.[handle] ?? DEFAULT_TAG_HANDLERS[handle] ?? handle) + tagPercentDecode(rawTag.slice(handle.length));
 }
 function tagNameShort(fullTag) {
 	let tag = fullTag;
 	if (tag.charCodeAt(0) === 33) {
 		tag = tag.slice(1);
-		return `!${tagPercentEncode(tag)}`;
+		return `!${tagPercentEncode(tag, true)}`;
 	}
-	if (tag.slice(0, 18) === "tag:yaml.org,2002:") return `!!${tagPercentEncode(tag.slice(18))}`;
-	return `!<${tagPercentEncode(tag)}>`;
+	if (tag.slice(0, 18) === "tag:yaml.org,2002:") return `!!${tagPercentEncode(tag.slice(18), true)}`;
+	return `!<${tagPercentEncode(tag, false)}>`;
 }
 //#endregion
 //#region src/parser/constructor.ts
@@ -99287,7 +99353,11 @@ function skipUntilLineEnd(state) {
 	while (ch !== 0 && !isEol(ch)) ch = state.input.charCodeAt(++state.position);
 }
 function checkPrintable(state, start, end) {
-	if (PATTERN_NON_PRINTABLE.test(state.input.slice(start, end))) throwError(state, "the stream contains non-printable characters");
+	const match = PATTERN_NON_PRINTABLE.exec(state.input.slice(start, end));
+	if (match !== null) {
+		state.position = start + match.index + match[0].length - 1;
+		throwError(state, "the stream contains non-printable characters");
+	}
 }
 function readTagProperty(state, props, inFlow) {
 	if (state.input.charCodeAt(state.position) !== 33) return false;
@@ -99314,12 +99384,14 @@ function readTagProperty(state, props, inFlow) {
 		state.position++;
 	} else {
 		while (ch !== 0 && !isWsOrEol(ch) && !(inFlow && isFlowIndicator(ch))) {
-			if (ch === 33) if (!isNamed) {
-				tagHandle = state.input.slice(suffixStart - 1, state.position + 1);
-				if (!PATTERN_TAG_HANDLE.test(tagHandle)) throwError(state, "named tag handle cannot contain such characters");
-				isNamed = true;
-				suffixStart = state.position + 1;
-			} else throwError(state, "tag suffix cannot contain exclamation marks");
+			if (ch === 33) {
+				if (!isNamed) {
+					tagHandle = state.input.slice(suffixStart - 1, state.position + 1);
+					if (!PATTERN_TAG_HANDLE.test(tagHandle)) throwError(state, "named tag handle cannot contain such characters");
+					isNamed = true;
+					suffixStart = state.position + 1;
+				} else throwError(state, "tag suffix cannot contain exclamation marks");
+			}
 			ch = state.input.charCodeAt(++state.position);
 		}
 		tagName = state.input.slice(suffixStart, state.position);
@@ -99503,7 +99575,7 @@ function readBlockScalar(state, parentIndent, props) {
 function canStartPlainScalar(state, nodeContext) {
 	const ch = state.input.charCodeAt(state.position);
 	const inFlow = nodeContext === CONTEXT_FLOW_IN;
-	if (ch === 0 || isWsOrEol(ch) || ch === 35 || ch === 38 || ch === 42 || ch === 33 || ch === 124 || ch === 62 || ch === 39 || ch === 34 || ch === 37 || ch === 64 || ch === 96 || inFlow && isFlowIndicator(ch)) return false;
+	if (ch === 0 || isWsOrEol(ch) || ch === 35 || ch === 38 || ch === 42 || ch === 33 || ch === 124 || ch === 62 || ch === 39 || ch === 34 || ch === 37 || ch === 64 || ch === 96 || isFlowIndicator(ch)) return false;
 	if (ch === 63 || ch === 45) {
 		const following = state.input.charCodeAt(state.position + 1);
 		if (isWsOrEolOrEnd(following) || inFlow && isFlowIndicator(following)) return false;
@@ -99775,19 +99847,20 @@ function parseNode(state, parentIndent, nodeContext, allowToSeek, allowCompact, 
 	if (indentStatus === 1 || nodeContext === CONTEXT_BLOCK_OUT) {
 		const flowIndent = nodeContext === CONTEXT_FLOW_IN || nodeContext === CONTEXT_FLOW_OUT ? parentIndent : parentIndent + 1;
 		const blockIndent = state.position - state.lineStart;
-		if (indentStatus === 1) if (allowBlockCollections && (readBlockSequence(state, blockIndent, props) || readBlockMapping(state, blockIndent, flowIndent, props)) || readFlowCollection(state, flowIndent, props)) hasContent = true;
-		else {
-			const ch = state.input.charCodeAt(state.position);
-			if (propertyStart !== null && allowPropertyMapping && allowBlockStyles && !allowBlockCollections && ch !== 124 && ch !== 62) {
-				const fallbackState = snapshotState(state);
-				const propertyIndent = propertyStart.position - propertyStart.lineStart;
-				restoreState(state, propertyStart);
-				if (readBlockMapping(state, propertyIndent, flowIndent, emptyProperties()) && state.events[fallbackState.eventsLength]?.type === EVENT_ID.MAPPING) hasContent = true;
-				else restoreState(state, fallbackState);
+		if (indentStatus === 1) {
+			if (allowBlockCollections && (readBlockSequence(state, blockIndent, props) || readBlockMapping(state, blockIndent, flowIndent, props)) || readFlowCollection(state, flowIndent, props)) hasContent = true;
+			else {
+				const ch = state.input.charCodeAt(state.position);
+				if (propertyStart !== null && allowPropertyMapping && allowBlockStyles && !allowBlockCollections && ch !== 124 && ch !== 62) {
+					const fallbackState = snapshotState(state);
+					const propertyIndent = propertyStart.position - propertyStart.lineStart;
+					restoreState(state, propertyStart);
+					if (readBlockMapping(state, propertyIndent, flowIndent, emptyProperties()) && state.events[fallbackState.eventsLength]?.type === EVENT_ID.MAPPING) hasContent = true;
+					else restoreState(state, fallbackState);
+				}
+				if (!hasContent && (allowBlockScalars && readBlockScalar(state, flowIndent, props) || readSingleQuotedScalar(state, flowIndent, props) || readDoubleQuotedScalar(state, flowIndent, props) || readAlias(state, props) || readPlainScalar(state, flowIndent, nodeContext, props))) hasContent = true;
 			}
-			if (!hasContent && (allowBlockScalars && readBlockScalar(state, flowIndent, props) || readSingleQuotedScalar(state, flowIndent, props) || readDoubleQuotedScalar(state, flowIndent, props) || readAlias(state, props) || readPlainScalar(state, flowIndent, nodeContext, props))) hasContent = true;
-		}
-		else if (indentStatus === 0) hasContent = allowBlockCollections && readBlockSequence(state, blockIndent, props);
+		} else if (indentStatus === 0) hasContent = allowBlockCollections && readBlockSequence(state, blockIndent, props);
 	}
 	allowBlockScalars = allowBlockScalars && !hasContent;
 	if (!hasContent && (props.anchorStart !== NO_RANGE$1 || props.tagStart !== NO_RANGE$1 || allowBlockScalars)) {
@@ -100134,20 +100207,18 @@ function visitNode(node, visitor, ctx) {
 				isKey: false
 			})) return true;
 			break;
-		case "mapping":
-			for (const { key, value } of node.items) {
-				if (visitNode(key, visitor, {
-					depth,
-					parent: node,
-					isKey: true
-				})) return true;
-				if (visitNode(value, visitor, {
-					depth,
-					parent: node,
-					isKey: false
-				})) return true;
-			}
-			break;
+		case "mapping": for (const { key, value } of node.items) {
+			if (visitNode(key, visitor, {
+				depth,
+				parent: node,
+				isKey: true
+			})) return true;
+			if (visitNode(value, visitor, {
+				depth,
+				parent: node,
+				isKey: false
+			})) return true;
+		}
 	}
 	return false;
 }
@@ -100579,8 +100650,10 @@ function writeBlockMapping(state, level, node, compact) {
 		const keyHasLineBreak = key.kind === "scalar" && key.value.indexOf("\n") !== -1;
 		const keyIsTooLong = keyText.length > 1024 && /^[\s\S]{1025}/u.test(keyText);
 		const explicitPair = keyIsBlock || keyHasLineBreak || keyIsTooLong;
-		if (explicitPair) if (keyText && CHAR_LINE_FEED === keyText.charCodeAt(0)) pairBuffer += "?";
-		else pairBuffer += "? ";
+		if (explicitPair) {
+			if (keyText && CHAR_LINE_FEED === keyText.charCodeAt(0)) pairBuffer += "?";
+			else pairBuffer += "? ";
+		}
 		pairBuffer += keyText;
 		if (explicitPair) pairBuffer += generateNextLine(state, level);
 		const valueText = writeNode(state, level + 1, value, node, {
@@ -100616,12 +100689,15 @@ function writeNode(state, level, node, parent, ctx) {
 	let body;
 	let shouldPrintTag = node.tagged;
 	const useBlockCollection = block && (node.kind === "mapping" || node.kind === "sequence") && node.style === COLLECTION_STYLE.BLOCK && node.items.length !== 0;
-	if (node.kind === "mapping") if (useBlockCollection) body = writeBlockMapping(state, level, node, compact);
-	else body = writeFlowMapping(state, level, node);
-	else if (node.kind === "sequence") if (useBlockCollection) if (state.seqNoIndent && !isblockseq && level > 0) body = writeBlockSequence(state, level - 1, node, compact);
-	else body = writeBlockSequence(state, level, node, compact);
-	else body = writeFlowSequence(state, level, node);
-	else {
+	if (node.kind === "mapping") {
+		if (useBlockCollection) body = writeBlockMapping(state, level, node, compact);
+		else body = writeFlowMapping(state, level, node);
+	} else if (node.kind === "sequence") {
+		if (useBlockCollection) {
+			if (state.seqNoIndent && !isblockseq && level > 0) body = writeBlockSequence(state, level - 1, node, compact);
+			else body = writeBlockSequence(state, level, node, compact);
+		} else body = writeFlowSequence(state, level, node);
+	} else {
 		const layout = scalarLayout(state, node, parent, level, iskey, !block);
 		detectAllowedStyles(layout);
 		for (const rule of state.scalarStyleRules) rule(layout);
